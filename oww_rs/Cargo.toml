@@ -1,0 +1,28 @@
+[package]
+name = "oww-rs"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+description = "Minimalistic version of the OpenWakeWord inference in Rust and ONNX runtime"
+keywords = ["stopword", "speech", "alexa", "detection", "onnx"]
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+env_logger = "0.11"
+log = "0.4"
+tokio = "1"
+tokio-util = "0"
+hound = "3.5"
+circular-buffer = "0.1"
+chrono = "0.4"
+rust-embed = "8.5"
+tract-core = "0.22"
+tract-onnx = "0.22"
+cpal = "0.16"
+rubato = "0.16"
+approx = "0.5"
+
+[dev-dependencies]
+anyhow = "1"

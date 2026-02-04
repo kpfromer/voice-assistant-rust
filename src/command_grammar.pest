@@ -1,0 +1,42 @@
+whitespace = { (" " | "\t" | "\n" | "\r")+ }
+
+// Main command rule
+light_command = _{ whitespace* ~ (turn_on_lights_command | turn_off_lights_command) ~ whitespace* }
+
+// Turn on lights commands
+turn_on_lights_command = {
+    turn_on ~ (all_lights | lights_with_area | lights_with_area_before | lights_only)
+}
+
+// Turn off lights commands
+turn_off_lights_command = {
+    turn_off ~ (all_lights | lights_with_area | lights_with_area_before | lights_only)
+}
+
+// Action verbs
+turn_on  = { "turn" ~ whitespace ~ "on" ~ whitespace }
+turn_off = { "turn" ~ whitespace ~ "off" ~ whitespace }
+
+// Light/lights variations
+light_singular = { "light" }
+light_plural   = { "lights" }
+light_word     = { light_singular | light_plural }
+
+// "All" keyword variations
+all_keyword = { "all" ~ whitespace }
+
+// Area specification
+area_prefix = { ("in" | "for") ~ whitespace ~ ("the" ~ whitespace)? }
+
+// Predefined areas
+area_living_room =  { "living" ~ whitespace ~ "room" }
+area_bedroom     =  { "bedroom" }
+area_hallway     =  { "hallway" }
+area_kitchen     =  { "kitchen" }
+area_name        = @{ area_living_room | area_bedroom | area_hallway | area_kitchen }
+
+// Command variations
+all_lights              = { all_keyword ~ light_word }
+lights_with_area        = { light_word ~ whitespace ~ area_prefix ~ area_name }
+lights_with_area_before = { area_name ~ whitespace ~ light_word }
+lights_only             = { light_word }

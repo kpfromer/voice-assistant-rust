@@ -1,0 +1,19 @@
+[package]
+name = "tts-processor"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "tts_processor"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tts-processor"
+path = "src/main.rs"
+
+[dependencies]
+rkyv = { version = "0.7", features = ["alloc", "validation", "bytecheck"] }
+rkyv_derive = "0.7"
+pocket-tts = { version = "0.3.1" }
+rodio = "0.21.1"
+color-eyre = "0.6.5"
