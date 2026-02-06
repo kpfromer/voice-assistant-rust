@@ -31,3 +31,15 @@ shear:
 check: lint format-check shear
 
 alias c := check
+
+sync-to-pi:
+    #!/bin/bash
+
+    REMOTE=kpfromer@10.1.0.33
+    REMOTE_PATH=/home/kpfromer/voice-assistant
+
+    rsync -av --delete \
+      --exclude 'target' \
+      --exclude '.git' \
+      --exclude '.jj' \
+      ./ $REMOTE:$REMOTE_PATH

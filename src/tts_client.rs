@@ -62,7 +62,7 @@ impl TtsClient {
 
         // Wait for socket to be created (with timeout)
         let mut attempts = 0;
-        let max_attempts = 50; // 5 seconds total
+        let max_attempts = 500; // 50 seconds total
         while !socket_path.exists() && attempts < max_attempts {
             std::thread::sleep(Duration::from_millis(100));
             attempts += 1;

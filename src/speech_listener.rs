@@ -6,7 +6,7 @@ use std::{
 
 use color_eyre::eyre::Result;
 use cpal::traits::DeviceTrait;
-use cpal::{Device, Stream, StreamConfig};
+use cpal::{Device, SampleFormat, Stream, StreamConfig};
 use oww_rs::{
     mic::{process_audio::resample_into_chunks, resampler::make_resampler},
     oww::{OWW_MODEL_CHUNK_SIZE, OwwModel},
@@ -332,6 +332,7 @@ impl SpeechPipeline {
 pub fn create_stream(
     device: Device,
     config: StreamConfig,
+    sample_format: SampleFormat,
     wake_word_threshold: f32,
     vad_threshold: f32,
     silence_seconds: f64,
@@ -348,25 +349,63 @@ pub fn create_stream(
     // Channel to send audio data assumes f32 bit, 16KHz, mono
     let (channel_tx, channel_rx) = mpsc::channel::<SpeechEvent>();
 
-    let pipeline_clone = pipeline.clone();
-    let stream = device.build_input_stream(
-        &config,
-        move |data: &[f32], _: &cpal::InputCallbackInfo| {
-            let mut pipeline_guard = match pipeline_clone.lock() {
-                Ok(guard) => guard,
-                Err(e) => {
-                    eprintln!("Failed to acquire pipeline lock: {e}");
-                    return;
-                }
-            };
+    let stream = match sample_format {
+        SampleFormat::F32 => {
+            let pipeline_clone = pipeline.clone();
+            device.build_input_stream(
+                &config,
+                move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                    let mut pipeline_guard = match pipeline_clone.lock() {
+                        Ok(guard) => guard,
+                        Err(e) => {
+                            eprintln!("Failed to acquire pipeline lock: {e}");
+                            return;
+                        }
+                    };
 
-            if let Some(event) = pipeline_guard.process(data) {
-                let _ = channel_tx.send(event);
-            }
-        },
-        |err| eprintln!("Stream error: {err}"),
-        None,
-    )?;
+                    if let Some(event) = pipeline_guard.process(data) {
+                        let _ = channel_tx.send(event);
+                    }
+                },
+                |err| eprintln!("Stream error: {err}"),
+                None,
+            )?
+        }
+        SampleFormat::I16 => {
+            let pipeline_clone = pipeline.clone();
+            device.build_input_stream(
+                &config,
+                move |data: &[i16], _: &cpal::InputCallbackInfo| {
+                    // Convert i16 to f32
+                    let data_f32: Vec<f32> =
+                        // Convert I16 samples to F32: I16 range is -32768 to 32767,
+                        // we divide by 32768.0 to normalize to F32 range of -1.0 to 1.0.
+                        // This is the standard audio sample conversion formula.
+                        data.iter().map(|&sample| sample as f32 / 32768.0).collect();
+
+                    let mut pipeline_guard = match pipeline_clone.lock() {
+                        Ok(guard) => guard,
+                        Err(e) => {
+                            eprintln!("Failed to acquire pipeline lock: {e}");
+                            return;
+                        }
+                    };
+
+                    if let Some(event) = pipeline_guard.process(&data_f32) {
+                        let _ = channel_tx.send(event);
+                    }
+                },
+                |err| eprintln!("Stream error: {err}"),
+                None,
+            )?
+        }
+        _ => {
+            return Err(color_eyre::eyre::eyre!(
+                "Unsupported sample format: {:?}. Only F32 and I16 are supported.",
+                sample_format
+            ));
+        }
+    };
 
     Ok((stream, channel_rx))
 }
