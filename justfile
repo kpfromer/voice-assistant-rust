@@ -26,3 +26,8 @@ test:
 # Checks for unused dependencies or files
 shear:
     cargo shear
+
+# Runs the checks
+check: lint format-check shear
+
+alias c := check

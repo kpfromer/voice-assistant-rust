@@ -51,9 +51,7 @@ fn parse_intent(command: &str) -> Intent {
 }
 
 fn extract_area(pairs: &mut pest::iterators::Pairs<'_, Rule>) -> Option<String> {
-    let Some(pair) = pairs.next() else {
-        return None;
-    };
+    let pair = pairs.next()?;
 
     match pair.as_rule() {
         Rule::all_lights | Rule::lights_only => None,

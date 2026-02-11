@@ -1,7 +1,7 @@
 use color_eyre::eyre::Result;
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 use tts_processor::{TtsCommand, TtsResponse, deserialize_response, serialize_command};
@@ -41,7 +41,7 @@ impl TtsClient {
         } else {
             // Fall back to cargo run
             Command::new("cargo")
-                .args(&[
+                .args([
                     "run",
                     "--bin",
                     "tts-processor",
@@ -144,6 +144,7 @@ impl TtsClient {
     }
 
     /// Stop current playback
+    #[allow(dead_code)]
     pub fn stop(&mut self) -> Result<()> {
         let cmd = TtsCommand::Stop;
         let cmd_bytes = serialize_command(&cmd)?;

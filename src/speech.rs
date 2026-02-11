@@ -4,7 +4,9 @@ use color_eyre::eyre::{Context, Result};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperState};
 
 pub struct SpeechSegment {
+    #[allow(dead_code)]
     pub start_timestamp: i64,
+    #[allow(dead_code)]
     pub end_timestamp: i64,
     pub text: String,
 }
@@ -60,11 +62,13 @@ pub enum TextToSpeechEvent {
         audio_data: Vec<f32>,
         response_tx: oneshot::Sender<Vec<SpeechSegment>>,
     },
+    #[allow(dead_code)]
     Stop,
 }
 
 pub struct SpeechToTextClient {
     channel_tx: mpsc::Sender<TextToSpeechEvent>,
+    #[allow(dead_code)]
     thread_handle: thread::JoinHandle<Result<()>>,
 }
 
@@ -100,7 +104,8 @@ impl SpeechToTextClient {
 
     pub fn process(&self, audio_data: Vec<f32>) -> Result<Vec<SpeechSegment>> {
         let (response_tx, response_rx) = oneshot::channel();
-        self.channel_tx
+        let _ = self
+            .channel_tx
             .send(TextToSpeechEvent::ConvertSpeechToText {
                 audio_data,
                 response_tx,

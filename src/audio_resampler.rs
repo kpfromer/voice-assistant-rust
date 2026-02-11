@@ -2,6 +2,7 @@ pub struct AudioResampler {
     input_rate: u32,
     output_rate: u32,
     // TODO: handle multiple channels properly
+    #[allow(dead_code)]
     channels: u16,
     buffer: Vec<f32>,
     target_chunk_size: usize,

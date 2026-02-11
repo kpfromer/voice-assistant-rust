@@ -86,13 +86,7 @@ fn clean_text_segments(segments: Vec<SpeechSegment>, voice_activation_text: &str
     // Only keep alphanumeric characters and spaces; collapse multiple spaces
     let cleaned: String = full_text
         .chars()
-        .filter_map(|c| {
-            if c.is_alphanumeric() || c.is_whitespace() {
-                Some(c)
-            } else {
-                None
-            }
-        })
+        .filter(|c| c.is_alphanumeric() || c.is_whitespace())
         .collect::<String>();
     // Collapse extra spaces
     let cleaned = cleaned.split_whitespace().collect::<Vec<_>>().join(" ");
