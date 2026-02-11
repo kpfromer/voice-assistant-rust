@@ -13,11 +13,11 @@ alias fmt := format
 
 # Runs the clippy linter
 lint:
-    cargo clippy
+    cargo clippy --no-deps
 
 # Runs the clippy linter and fixes the issues
 lint-fix:
-    cargo clippy --fix
+    cargo clippy --fix --no-deps
 
 # Runs the tests
 test:
