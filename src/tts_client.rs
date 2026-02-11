@@ -4,9 +4,7 @@ use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
-use tts_processor::{
-    deserialize_response, serialize_command, TtsCommand, TtsResponse,
-};
+use tts_processor::{TtsCommand, TtsResponse, deserialize_response, serialize_command};
 
 pub struct TtsClient {
     stream: UnixStream,
@@ -18,10 +16,8 @@ impl TtsClient {
     /// Create a new TTS client, spawning the TTS processor process
     pub fn new() -> Result<Self> {
         // Generate unique socket path
-        let socket_path = std::env::temp_dir().join(format!(
-            "voice-assistant-tts-{}.sock",
-            std::process::id()
-        ));
+        let socket_path =
+            std::env::temp_dir().join(format!("voice-assistant-tts-{}.sock", std::process::id()));
 
         // Try to find the built binary
         let cwd = std::env::current_dir()?;
