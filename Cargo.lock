@@ -5196,6 +5196,8 @@ dependencies = [
  "pest",
  "pest_derive",
  "reqwest 0.13.1",
+ "serde",
+ "serde_derive",
  "serde_json",
  "tts-processor",
  "url",

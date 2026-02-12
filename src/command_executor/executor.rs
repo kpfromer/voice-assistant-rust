@@ -2,6 +2,7 @@ use chrono::Datelike;
 use chrono::Local;
 use chrono::Timelike;
 use color_eyre::eyre::Result;
+use color_eyre::eyre::eyre;
 use pest::Parser;
 
 use crate::command_executor::config::CommandExecutorConfig;
@@ -10,6 +11,7 @@ use crate::command_executor::grammar::Rule;
 use crate::command_executor::home_assistant::extract_area;
 use crate::command_executor::home_assistant::turn_off_light;
 use crate::command_executor::home_assistant::turn_on_light;
+use crate::command_executor::services::weather;
 use crate::human_format::int_to_words;
 
 #[derive(Debug)]
@@ -17,6 +19,7 @@ enum Intent {
     TurnOnLight { area: Option<String> },
     TurnOffLight { area: Option<String> },
     GetCurrentTime,
+    GetWeather,
     Unknown,
 }
 
@@ -44,6 +47,7 @@ fn parse_intent(command: &str) -> Intent {
             Intent::TurnOffLight { area }
         }
         Rule::current_time_command => Intent::GetCurrentTime,
+        Rule::whats_the_weather_command => Intent::GetWeather,
         _ => return Intent::Unknown,
     }
 }
@@ -84,6 +88,16 @@ fn get_current_time() -> Result<String> {
     ))
 }
 
+fn get_weather(config: &CommandExecutorConfig) -> Result<String> {
+    match (config.weather_latitude, config.weather_longitude) {
+        (Some(latitude), Some(longitude)) => {
+            let weather = weather::get_weather(latitude, longitude)?;
+            Ok(weather)
+        }
+        _ => Err(eyre!("Weather latitude and longitude are not set")),
+    }
+}
+
 pub fn execute_command(config: &CommandExecutorConfig, command: &str) -> Result<String> {
     let intent = parse_intent(command);
 
@@ -108,6 +122,7 @@ pub fn execute_command(config: &CommandExecutorConfig, command: &str) -> Result<
             Ok(format!("Lights turned off{}", area_msg))
         }
         Intent::GetCurrentTime => get_current_time(),
+        Intent::GetWeather => get_weather(config),
         Intent::Unknown => {
             println!("Unknown command: '{}'", command);
             Ok("Unknown command".to_string())

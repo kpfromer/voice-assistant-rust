@@ -1,7 +1,7 @@
 whitespace = { (" " | "\t" | "\n" | "\r")+ }
 
 // Main command rule
-command = _{ whitespace* ~ (turn_on_lights_command | turn_off_lights_command | current_time_command) ~ whitespace* }
+command = _{ whitespace* ~ (turn_on_lights_command | turn_off_lights_command | current_time_command | whats_the_weather_command) ~ whitespace* }
 
 // Turn on lights commands
 turn_on_lights_command = {
@@ -44,4 +44,8 @@ lights_only             = { light_word }
 // Time
 current_time_command = {
     "what time is it" | "what is the time"
+}
+
+whats_the_weather_command = {
+    ("what is the weather" | "whats the weather")  ~ (whitespace+ ~ "like")?
 }

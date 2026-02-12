@@ -56,6 +56,12 @@ enum Commands {
 
         #[arg(long, env = "WAKE_WORD_THRESHOLD", default_value = "0.2")]
         wake_word_threshold: f32,
+
+        #[arg(short, long, env = "WEATHER_LATITUDE")]
+        weather_latitude: Option<f64>,
+
+        #[arg(short, long, env = "WEATHER_LONGITUDE")]
+        weather_longitude: Option<f64>,
     },
     GetInputDevices,
 }
@@ -353,6 +359,8 @@ struct VoiceAssistantConfig {
     pub silence_seconds: f64,
     pub rolling_buffer_duration_seconds: f64,
     pub wake_word_threshold: f32,
+    pub weather_latitude: Option<f64>,
+    pub weather_longitude: Option<f64>,
 }
 
 fn run_voice_assistant(voice_assistant_config: VoiceAssistantConfig) -> Result<()> {
@@ -410,6 +418,8 @@ fn run_voice_assistant(voice_assistant_config: VoiceAssistantConfig) -> Result<(
     let command_executor_config = command_executor::CommandExecutorConfig::new(
         voice_assistant_config.home_assistant_base_url,
         voice_assistant_config.home_assistant_token,
+        voice_assistant_config.weather_latitude,
+        voice_assistant_config.weather_longitude,
     );
 
     println!("Listening for speech... say alexa to start");
@@ -460,6 +470,8 @@ fn main() -> Result<()> {
             silence_seconds,
             rolling_buffer_duration_seconds,
             wake_word_threshold,
+            weather_latitude,
+            weather_longitude,
         } => run_voice_assistant(VoiceAssistantConfig {
             home_assistant_base_url,
             home_assistant_token,
@@ -467,6 +479,8 @@ fn main() -> Result<()> {
             silence_seconds,
             rolling_buffer_duration_seconds,
             wake_word_threshold,
+            weather_latitude,
+            weather_longitude,
         }),
         Commands::GetInputDevices => get_input_devices(),
     }
