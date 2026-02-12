@@ -17,6 +17,7 @@ use whisper_rs::{SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 mod audio_resampler;
 mod command_executor;
+mod human_format;
 mod speech;
 mod speech_listener;
 mod tts_client;

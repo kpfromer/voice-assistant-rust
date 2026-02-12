@@ -1,7 +1,7 @@
 whitespace = { (" " | "\t" | "\n" | "\r")+ }
 
 // Main command rule
-light_command = _{ whitespace* ~ (turn_on_lights_command | turn_off_lights_command) ~ whitespace* }
+command = _{ whitespace* ~ (turn_on_lights_command | turn_off_lights_command | current_time_command) ~ whitespace* }
 
 // Turn on lights commands
 turn_on_lights_command = {
@@ -40,3 +40,8 @@ all_lights              = { all_keyword ~ light_word }
 lights_with_area        = { light_word ~ whitespace ~ area_prefix ~ area_name }
 lights_with_area_before = { area_name ~ whitespace ~ light_word }
 lights_only             = { light_word }
+
+// Time
+current_time_command = {
+    "what time is it" | "what is the time"
+}
