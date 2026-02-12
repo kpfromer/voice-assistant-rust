@@ -1,3 +1,5 @@
+set dotenv-load := true
+
 default:
     just --list
 
@@ -43,3 +45,6 @@ sync-to-pi:
       --exclude '.git' \
       --exclude '.jj' \
       ./ $REMOTE:$REMOTE_PATH
+
+run:
+    cargo run --release -- run-voice-assistant

@@ -197,7 +197,7 @@ pub fn execute_command(config: &CommandExecutorConfig, command: &str) -> Result<
         }
         Intent::Unknown => {
             println!("Unknown command: '{}'", command);
-            Ok("I can't do that".to_string())
+            Ok("Unknown command".to_string())
         }
     }
 }
