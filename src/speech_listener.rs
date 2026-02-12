@@ -67,16 +67,11 @@ struct InProgressSpeechState {
     past_has_been_speech: VecDeque<bool>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 enum SpeechListenerState {
+    #[default]
     WaitingForWakeWord,
     ListeningForEndOfSpeech(InProgressSpeechState),
-}
-
-impl Default for SpeechListenerState {
-    fn default() -> Self {
-        Self::WaitingForWakeWord
-    }
 }
 
 struct WakeWordDetector {
@@ -236,7 +231,6 @@ struct SpeechPipeline {
     wake_word_detector: WakeWordDetector,
     end_of_speech_detector: EndOfSpeechDetector,
     rolling_buffer: RollingBuffer,
-    chunk_duration: Duration,
 }
 
 impl SpeechPipeline {
@@ -267,7 +261,6 @@ impl SpeechPipeline {
             wake_word_detector,
             end_of_speech_detector,
             rolling_buffer,
-            chunk_duration,
         })
     }
 

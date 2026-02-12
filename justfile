@@ -1,59 +1,33 @@
-#  wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
-# Docker-based development commands
-# ===================================
+default:
+    just --list
 
-# Build the Docker image
-docker-build:
-    docker compose build
+# Checks if the code is formatted correctly
+format-check:
+    cargo fmt --check
 
-# Run the app in Docker
-docker-run:
-    docker compose run --rm dev
+# Formats the code
+format:
+    cargo fmt
 
-# Open a shell in the Docker container for development
-docker-shell:
-    docker compose run --rm shell
+alias fmt := format
 
-# Build inside Docker (useful for CI or clean builds)
-docker-cargo-build:
-    docker compose run --rm dev cargo build --release
+# Runs the clippy linter
+lint:
+    cargo clippy --no-deps
 
-# Run cargo check inside Docker
-docker-check:
-    docker compose run --rm dev cargo check
+# Runs the clippy linter and fixes the issues
+lint-fix:
+    cargo clippy --fix --no-deps
 
-# Clean Docker volumes (cargo cache)
-docker-clean:
-    docker compose down -v
+# Runs the tests
+test:
+    cargo test --release
 
-# Watch for changes and rebuild (inside Docker shell)
-docker-watch:
-    docker compose run --rm dev cargo watch -x 'build --release'
+# Checks for unused dependencies or files
+shear:
+    cargo shear
 
-# Native build commands (uses vendored protobuf - no protoc required)
-# ===================================================================
-# Set environment for native build with vendored protobuf
+# Runs the checks
+check: lint format-check shear
 
-export PROTOBUF_NO_VENDOR := "1"
-export PROTOC_NO_VENDOR := "1"
-export SENTENCEPIECE_SYS_USE_PKG_CONFIG := "0"
-export SENTENCEPIECE_SYS_BUILD := "1"
-export PKG_CONFIG_PATH := ""
-export CMAKE_PREFIX_PATH := ""
-
-# Native build (uses vendored protobuf - no protoc required)
-build:
-    cargo build --release
-
-# Native run
-run:
-    cargo run --release
-
-# Clean native build artifacts
-clean:
-    cargo clean
-
-# Download models
-download-models:
-    wget -P whisper_model/ https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
-    wget https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
+alias c := check

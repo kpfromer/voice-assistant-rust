@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: "Cache cargo"
+        uses: "actions/cache@v4"
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install ALSA dependencies
+        run: sudo apt-get update && sudo apt-get install -y alsa-base alsa-utils libasound2-dev
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Create dummy oww_rs models
+        run: |
+          mkdir -p oww_rs/models
+          mkdir -p oww_rs/speech_models
+          echo "dummy" > oww_rs/models/alexa.onnx
+          echo "dummy" > oww_rs/speech_models/alexa.onnx
+
+      - name: Check formatting
+        run: just format-check
+
+      - name: Run clippy
+        run: just lint
+
+      - name: Run tests
+        run: just test
