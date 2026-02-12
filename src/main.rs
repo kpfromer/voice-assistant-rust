@@ -2,25 +2,25 @@ use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 
+use crate::speech::{SpeechSegment, SpeechToTextClient};
+use crate::speech_listener::SpeechEvent;
+use crate::{speech_listener::create_stream, tts_client::TtsClient};
+use clap::Parser;
 use color_eyre::eyre::{OptionExt, Result};
 use cpal::traits::StreamTrait;
 use cpal::{
     BufferSize, Device, SampleFormat, StreamConfig, SupportedStreamConfigRange,
     traits::{DeviceTrait, HostTrait},
 };
-use whisper_rs::{SamplingStrategy, WhisperContext, WhisperContextParameters};
-
-use crate::speech::{SpeechSegment, SpeechToTextClient};
-use crate::speech_listener::SpeechEvent;
-use crate::{speech_listener::create_stream, tts_client::TtsClient};
 use std::sync::mpsc;
+use whisper_rs::{SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 mod audio_resampler;
 mod command_executor;
 mod speech;
 mod speech_listener;
 mod tts_client;
-use clap::{Parser, Subcommand};
+use clap::Subcommand;
 use url::Url;
 
 #[derive(Parser)]
@@ -52,6 +52,9 @@ enum Commands {
             default_value = "2.0"
         )]
         rolling_buffer_duration_seconds: f64,
+
+        #[arg(long, env = "WAKE_WORD_THRESHOLD", default_value = "0.2")]
+        wake_word_threshold: f32,
     },
     GetInputDevices,
 }
@@ -348,6 +351,7 @@ struct VoiceAssistantConfig {
     pub input_device_id: String,
     pub silence_seconds: f64,
     pub rolling_buffer_duration_seconds: f64,
+    pub wake_word_threshold: f32,
 }
 
 fn run_voice_assistant(voice_assistant_config: VoiceAssistantConfig) -> Result<()> {
@@ -394,7 +398,7 @@ fn run_voice_assistant(voice_assistant_config: VoiceAssistantConfig) -> Result<(
     let (stream, channel_rx, _config, _sample_format) = try_create_stream(
         &voice_assistant_config.input_device_id,
         candidates,
-        0.2,
+        voice_assistant_config.wake_word_threshold,
         0.75,
         voice_assistant_config.silence_seconds,
         voice_assistant_config.rolling_buffer_duration_seconds,
@@ -454,12 +458,14 @@ fn main() -> Result<()> {
             input_device_id,
             silence_seconds,
             rolling_buffer_duration_seconds,
+            wake_word_threshold,
         } => run_voice_assistant(VoiceAssistantConfig {
             home_assistant_base_url,
             home_assistant_token,
             input_device_id,
             silence_seconds,
             rolling_buffer_duration_seconds,
+            wake_word_threshold,
         }),
         Commands::GetInputDevices => get_input_devices(),
     }
