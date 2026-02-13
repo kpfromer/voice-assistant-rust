@@ -94,7 +94,12 @@ fn get_weather(config: &CommandExecutorConfig) -> Result<String> {
             let weather = weather::get_weather(latitude, longitude)?;
             Ok(weather)
         }
-        _ => Err(eyre!("Weather latitude and longitude are not set")),
+        (Some(_), None) => Ok("Weather longitude is not set".to_string()),
+        (None, Some(_)) => Ok("Weather latitude is not set".to_string()),
+        (None, None) => Ok(
+            "Weather service is not configured. Please set weather latitude and longitude"
+                .to_string(),
+        ),
     }
 }
 
