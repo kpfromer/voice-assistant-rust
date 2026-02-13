@@ -6,3 +6,4 @@ oww_rs/models/
 oww_rs/speech_models/
 tts-model/
 .env
+.env*

@@ -2,7 +2,6 @@ use chrono::Datelike;
 use chrono::Local;
 use chrono::Timelike;
 use color_eyre::eyre::Result;
-use color_eyre::eyre::eyre;
 use pest::Parser;
 
 use crate::command_executor::config::CommandExecutorConfig;
@@ -14,7 +13,7 @@ use crate::command_executor::services::home_assistant::{
 use crate::command_executor::services::weather;
 use crate::human_format::int_to_words;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Intent {
     TurnOnLight { area: Option<String> },
     TurnOffLight { area: Option<String> },
@@ -132,5 +131,216 @@ pub fn execute_command(config: &CommandExecutorConfig, command: &str) -> Result<
             println!("Unknown command: '{}'", command);
             Ok("Unknown command".to_string())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Weather commands
+    #[test]
+    fn parse_whats_the_weather() {
+        assert_eq!(parse_intent("whats the weather"), Intent::GetWeather);
+    }
+
+    #[test]
+    fn parse_what_is_the_weather() {
+        assert_eq!(parse_intent("what is the weather"), Intent::GetWeather);
+    }
+
+    #[test]
+    fn parse_whats_the_weather_like() {
+        assert_eq!(parse_intent("whats the weather like"), Intent::GetWeather);
+    }
+
+    #[test]
+    fn parse_what_is_the_weather_like() {
+        assert_eq!(parse_intent("what is the weather like"), Intent::GetWeather);
+    }
+
+    #[test]
+    fn parse_weather_case_insensitive() {
+        assert_eq!(parse_intent("Whats The Weather"), Intent::GetWeather);
+    }
+
+    // Time commands
+    #[test]
+    fn parse_what_time_is_it() {
+        assert_eq!(parse_intent("what time is it"), Intent::GetCurrentTime);
+    }
+
+    #[test]
+    fn parse_what_is_the_time() {
+        assert_eq!(parse_intent("what is the time"), Intent::GetCurrentTime);
+    }
+
+    #[test]
+    fn parse_time_case_insensitive() {
+        assert_eq!(parse_intent("What Time Is It"), Intent::GetCurrentTime);
+    }
+
+    // Turn on lights commands
+    #[test]
+    fn parse_turn_on_lights() {
+        assert_eq!(
+            parse_intent("turn on lights"),
+            Intent::TurnOnLight { area: None }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_light_singular() {
+        assert_eq!(
+            parse_intent("turn on light"),
+            Intent::TurnOnLight { area: None }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_all_lights() {
+        assert_eq!(
+            parse_intent("turn on all lights"),
+            Intent::TurnOnLight { area: None }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_lights_in_bedroom() {
+        assert_eq!(
+            parse_intent("turn on lights in the bedroom"),
+            Intent::TurnOnLight {
+                area: Some("bedroom".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_lights_in_living_room() {
+        assert_eq!(
+            parse_intent("turn on lights in the living room"),
+            Intent::TurnOnLight {
+                area: Some("living_room".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_lights_in_kitchen() {
+        assert_eq!(
+            parse_intent("turn on lights in the kitchen"),
+            Intent::TurnOnLight {
+                area: Some("kitchen".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_lights_in_hallway() {
+        assert_eq!(
+            parse_intent("turn on lights in the hallway"),
+            Intent::TurnOnLight {
+                area: Some("hallway".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_lights_for_area() {
+        assert_eq!(
+            parse_intent("turn on lights for the bedroom"),
+            Intent::TurnOnLight {
+                area: Some("bedroom".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_lights_area_without_the() {
+        assert_eq!(
+            parse_intent("turn on lights in bedroom"),
+            Intent::TurnOnLight {
+                area: Some("bedroom".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_area_before_lights() {
+        assert_eq!(
+            parse_intent("turn on bedroom lights"),
+            Intent::TurnOnLight {
+                area: Some("bedroom".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_on_living_room_lights() {
+        assert_eq!(
+            parse_intent("turn on living room lights"),
+            Intent::TurnOnLight {
+                area: Some("living_room".to_string())
+            }
+        );
+    }
+
+    // Turn off lights commands
+    #[test]
+    fn parse_turn_off_lights() {
+        assert_eq!(
+            parse_intent("turn off lights"),
+            Intent::TurnOffLight { area: None }
+        );
+    }
+
+    #[test]
+    fn parse_turn_off_all_lights() {
+        assert_eq!(
+            parse_intent("turn off all lights"),
+            Intent::TurnOffLight { area: None }
+        );
+    }
+
+    #[test]
+    fn parse_turn_off_lights_in_bedroom() {
+        assert_eq!(
+            parse_intent("turn off lights in the bedroom"),
+            Intent::TurnOffLight {
+                area: Some("bedroom".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_turn_off_bedroom_lights() {
+        assert_eq!(
+            parse_intent("turn off bedroom lights"),
+            Intent::TurnOffLight {
+                area: Some("bedroom".to_string())
+            }
+        );
+    }
+
+    // Unknown commands
+    #[test]
+    fn parse_unknown_command() {
+        assert_eq!(parse_intent("hello world"), Intent::Unknown);
+    }
+
+    #[test]
+    fn parse_empty_string() {
+        assert_eq!(parse_intent(""), Intent::Unknown);
+    }
+
+    #[test]
+    fn parse_gibberish() {
+        assert_eq!(parse_intent("asdfghjkl"), Intent::Unknown);
+    }
+
+    // Whitespace handling
+    #[test]
+    fn parse_with_trailing_whitespace() {
+        assert_eq!(parse_intent("whats the weather  "), Intent::GetWeather);
     }
 }

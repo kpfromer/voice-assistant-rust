@@ -34,17 +34,19 @@ check: lint format-check shear
 
 alias c := check
 
-sync-to-pi:
+sync-remote:
     #!/bin/bash
-
-    REMOTE=kpfromer@10.1.0.33
-    REMOTE_PATH=/home/kpfromer/voice-assistant
-
+    REMOTE="kpfromer@10.1.0.33"
+    REMOTE_PATH="/home/kpfromer/voice-assistant"
     rsync -av --delete \
       --exclude 'target' \
+      --exclude '.env*' \
       --exclude '.git' \
       --exclude '.jj' \
       ./ $REMOTE:$REMOTE_PATH
+    
+    scp .env.raspberry $REMOTE:$REMOTE_PATH/.env
+    
 
 run:
     cargo run --release -- run-voice-assistant

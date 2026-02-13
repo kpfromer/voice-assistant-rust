@@ -1,7 +1,7 @@
 whitespace = { (" " | "\t" | "\n" | "\r")+ }
 
 // Main command rule
-command = _{ whitespace* ~ (turn_on_lights_command | turn_off_lights_command | current_time_command | whats_the_weather_command) ~ whitespace* }
+command = _{ SOI ~ whitespace* ~ (turn_on_lights_command | turn_off_lights_command | current_time_command | whats_the_weather_command) ~ whitespace* ~ EOI }
 
 // Turn on lights commands
 turn_on_lights_command = {
@@ -20,7 +20,7 @@ turn_off = { "turn" ~ whitespace ~ "off" ~ whitespace }
 // Light/lights variations
 light_singular = { "light" }
 light_plural   = { "lights" }
-light_word     = { light_singular | light_plural }
+light_word     = { light_plural | light_singular }
 
 // "All" keyword variations
 all_keyword = { "all" ~ whitespace }

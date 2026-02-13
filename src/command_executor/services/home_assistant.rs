@@ -12,9 +12,10 @@ pub fn extract_area(pairs: &mut pest::iterators::Pairs<'_, Rule>) -> Option<Stri
         Rule::all_lights | Rule::lights_only => None,
         Rule::lights_with_area => {
             // Structure: light_word ~ whitespace ~ area_prefix ~ area_name
-            // Skip light_word and area_prefix to get to area_name
+            // Skip light_word, whitespace, and area_prefix to get to area_name
             let mut inner = pair.into_inner();
             inner.next(); // Skip light_word
+            inner.next(); // Skip whitespace
             inner.next(); // Skip area_prefix
             let area_pair = inner.next()?;
 
