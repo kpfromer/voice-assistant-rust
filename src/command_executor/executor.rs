@@ -8,9 +8,9 @@ use pest::Parser;
 use crate::command_executor::config::CommandExecutorConfig;
 use crate::command_executor::grammar::CommandParser;
 use crate::command_executor::grammar::Rule;
-use crate::command_executor::home_assistant::extract_area;
-use crate::command_executor::home_assistant::turn_off_light;
-use crate::command_executor::home_assistant::turn_on_light;
+use crate::command_executor::services::home_assistant::{
+    extract_area, turn_off_light, turn_on_light,
+};
 use crate::command_executor::services::weather;
 use crate::human_format::int_to_words;
 
