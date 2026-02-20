@@ -91,6 +91,82 @@ pub fn int_to_words<T: Into<i32>>(n: T) -> String {
     }
 }
 
+/// Converts a word-form number string to an integer.
+/// Handles: "five" → 5, "twenty three" → 23, "one hundred forty two" → 142
+/// Also handles raw digit strings like "5" or "23".
+pub fn words_to_int(s: &str) -> Option<u64> {
+    let s = s.trim().to_lowercase();
+
+    // Try parsing as a raw number first
+    if let Ok(n) = s.parse::<u64>() {
+        return Some(n);
+    }
+
+    let words: Vec<&str> = s.split_whitespace().collect();
+    if words.is_empty() {
+        return None;
+    }
+
+    let mut total: u64 = 0;
+    let mut current: u64 = 0;
+
+    for word in &words {
+        match *word {
+            "zero" => current += 0,
+            "one" | "a" => current += 1,
+            "two" => current += 2,
+            "three" => current += 3,
+            "four" => current += 4,
+            "five" => current += 5,
+            "six" => current += 6,
+            "seven" => current += 7,
+            "eight" => current += 8,
+            "nine" => current += 9,
+            "ten" => current += 10,
+            "eleven" => current += 11,
+            "twelve" => current += 12,
+            "thirteen" => current += 13,
+            "fourteen" => current += 14,
+            "fifteen" => current += 15,
+            "sixteen" => current += 16,
+            "seventeen" => current += 17,
+            "eighteen" => current += 18,
+            "nineteen" => current += 19,
+            "twenty" => current += 20,
+            "thirty" => current += 30,
+            "forty" => current += 40,
+            "fifty" => current += 50,
+            "sixty" => current += 60,
+            "seventy" => current += 70,
+            "eighty" => current += 80,
+            "ninety" => current += 90,
+            "hundred" => current *= 100,
+            "thousand" => {
+                current *= 1000;
+                total += current;
+                current = 0;
+            }
+            "and" => {} // skip "and" in "one hundred and five"
+            _ => {
+                // Try parsing individual word as digit
+                if let Ok(n) = word.parse::<u64>() {
+                    current += n;
+                } else {
+                    return None;
+                }
+            }
+        }
+    }
+
+    total += current;
+
+    if total == 0 && !words.contains(&"zero") {
+        return None;
+    }
+
+    Some(total)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,5 +215,59 @@ mod tests {
     fn test_negative() {
         assert_eq!(int_to_words(-1), "negative one");
         assert_eq!(int_to_words(-42), "negative forty two");
+    }
+
+    #[test]
+    fn test_words_to_int_single_digits() {
+        assert_eq!(words_to_int("zero"), Some(0));
+        assert_eq!(words_to_int("one"), Some(1));
+        assert_eq!(words_to_int("five"), Some(5));
+        assert_eq!(words_to_int("nine"), Some(9));
+    }
+
+    #[test]
+    fn test_words_to_int_teens() {
+        assert_eq!(words_to_int("ten"), Some(10));
+        assert_eq!(words_to_int("eleven"), Some(11));
+        assert_eq!(words_to_int("fifteen"), Some(15));
+        assert_eq!(words_to_int("nineteen"), Some(19));
+    }
+
+    #[test]
+    fn test_words_to_int_tens() {
+        assert_eq!(words_to_int("twenty"), Some(20));
+        assert_eq!(words_to_int("forty two"), Some(42));
+        assert_eq!(words_to_int("ninety nine"), Some(99));
+    }
+
+    #[test]
+    fn test_words_to_int_hundreds() {
+        assert_eq!(words_to_int("one hundred"), Some(100));
+        assert_eq!(words_to_int("one hundred twenty three"), Some(123));
+        assert_eq!(words_to_int("two hundred and five"), Some(205));
+    }
+
+    #[test]
+    fn test_words_to_int_thousands() {
+        assert_eq!(words_to_int("one thousand"), Some(1000));
+        assert_eq!(words_to_int("one thousand two hundred thirty four"), Some(1234));
+    }
+
+    #[test]
+    fn test_words_to_int_raw_digits() {
+        assert_eq!(words_to_int("5"), Some(5));
+        assert_eq!(words_to_int("42"), Some(42));
+        assert_eq!(words_to_int("100"), Some(100));
+    }
+
+    #[test]
+    fn test_words_to_int_a_as_one() {
+        assert_eq!(words_to_int("a"), Some(1));
+    }
+
+    #[test]
+    fn test_words_to_int_invalid() {
+        assert_eq!(words_to_int("hello"), None);
+        assert_eq!(words_to_int(""), None);
     }
 }

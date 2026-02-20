@@ -127,6 +127,7 @@ fn write_length_prefixed_message(stream: &mut UnixStream, data: &[u8]) -> Result
 struct AudioState {
     current_sink: Arc<Mutex<Option<rodio::Sink>>>,
     streaming_handle: Arc<Mutex<Option<StreamingAudioHandle>>>,
+    volume: Arc<Mutex<f32>>,
 }
 
 impl AudioState {
@@ -134,7 +135,21 @@ impl AudioState {
         Self {
             current_sink: Arc::new(Mutex::new(None)),
             streaming_handle: Arc::new(Mutex::new(None)),
+            volume: Arc::new(Mutex::new(1.0)),
         }
+    }
+
+    fn set_volume(&self, vol: f32) {
+        let vol = vol.clamp(0.0, 1.0);
+        *self.volume.lock().unwrap() = vol;
+        // Apply to current sink if one exists
+        if let Some(ref sink) = *self.current_sink.lock().unwrap() {
+            sink.set_volume(vol);
+        }
+    }
+
+    fn get_volume(&self) -> f32 {
+        *self.volume.lock().unwrap()
     }
 
     fn stop(&self) {
@@ -214,6 +229,7 @@ fn handle_connection(
 
                 // Start playing the stream
                 let sink = rodio::Sink::connect_new(mixer);
+                sink.set_volume(audio_state.get_volume());
                 sink.append(source);
                 *audio_state.current_sink.lock().unwrap() = Some(sink);
 
@@ -266,6 +282,11 @@ fn handle_connection(
                     thread::sleep(Duration::from_millis(10));
                 }
                 let resp = serialize_response(&TtsResponse::Finished)?;
+                write_length_prefixed_message(&mut stream, &resp)?;
+            }
+            TtsCommand::SetVolume(vol) => {
+                audio_state.set_volume(vol);
+                let resp = serialize_response(&TtsResponse::VolumeSet)?;
                 write_length_prefixed_message(&mut stream, &resp)?;
             }
         }
