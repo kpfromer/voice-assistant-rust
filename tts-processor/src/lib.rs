@@ -12,6 +12,8 @@ pub enum TtsCommand {
     Stop,
     /// Wait until current audio playback is finished
     WaitUntilFinished,
+    /// Set the volume for audio playback (0.0 to 1.0)
+    SetVolume(f32),
 }
 
 /// Responses from the TTS processor
@@ -28,6 +30,8 @@ pub enum TtsResponse {
     Stopped,
     /// Error occurred
     Error(String),
+    /// Volume has been set
+    VolumeSet,
 }
 
 /// Serialize a command to bytes

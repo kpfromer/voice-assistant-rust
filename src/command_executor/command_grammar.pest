@@ -1,7 +1,7 @@
 whitespace = { (" " | "\t" | "\n" | "\r")+ }
 
 // Main command rule
-command = _{ SOI ~ whitespace* ~ (turn_on_lights_command | turn_off_lights_command | current_time_command | whats_the_weather_command) ~ whitespace* ~ EOI }
+command = _{ whitespace* ~ (turn_on_lights_command | turn_off_lights_command | current_time_command | whats_the_weather_command | set_timer_command | get_timers_command | cancel_all_timers_command | cancel_timer_command) ~ whitespace* }
 
 // Turn on lights commands
 turn_on_lights_command = {
@@ -48,4 +48,87 @@ current_time_command = {
 
 whats_the_weather_command = {
     ("what is the weather" | "whats the weather")  ~ (whitespace+ ~ "like")?
+}
+
+// ============================================
+// Number words (for timer durations)
+// ============================================
+number_ones = {
+    "nineteen" | "eighteen" | "seventeen" | "sixteen" | "fifteen" |
+    "fourteen" | "thirteen" | "twelve" | "eleven" | "ten" |
+    "nine" | "eight" | "seven" | "six" | "five" |
+    "four" | "three" | "two" | "one" | "a"
+}
+
+number_tens = {
+    "ninety" | "eighty" | "seventy" | "sixty" | "fifty" |
+    "forty" | "thirty" | "twenty"
+}
+
+// Matches: "twenty three", "forty", "five", "a"
+number_under_hundred = @{
+    (number_tens ~ (whitespace ~ number_ones)?) | number_ones
+}
+
+// Also allow raw digits like "5", "30", "120"
+number_digits = @{ ASCII_DIGIT+ }
+
+// A number is either word-form or digit-form
+number = @{ number_under_hundred | number_digits }
+
+// ============================================
+// Duration units
+// ============================================
+time_unit_second = { ("seconds" | "second" | "secs" | "sec") }
+time_unit_minute = { ("minutes" | "minute" | "mins" | "min") }
+time_unit_hour   = { ("hours" | "hour" | "hrs" | "hr") }
+time_unit = { time_unit_hour | time_unit_minute | time_unit_second }
+
+// A single duration segment: "five minutes", "1 hour"
+duration_segment = { number ~ whitespace ~ time_unit }
+
+// Compound duration: "one hour thirty five minutes", "1 hour and 30 minutes"
+timer_duration = { duration_segment ~ (whitespace ~ ("and" ~ whitespace)? ~ duration_segment)* }
+
+// ============================================
+// Timer commands
+// ============================================
+
+// "set a timer for five minutes"
+// "set a timer for one hour thirty five minutes"
+// "set a timer for five minutes called pizza"
+// "set timer for 10 minutes"
+set_timer_command = {
+    ("set" | "start") ~ (whitespace ~ "a")? ~ whitespace ~ "timer" ~ whitespace ~
+    "for" ~ whitespace ~ timer_duration ~
+    (whitespace ~ ("called" | "named") ~ whitespace ~ timer_name)?
+}
+
+// Timer name: everything remaining after "called"/"named"
+timer_name = @{ (!EOI ~ ANY)+ }
+
+// "what timers are set", "how much time is left", "list timers", "check timers"
+get_timers_command = {
+    ("what" ~ whitespace ~ "timers" ~ (whitespace ~ ("are" ~ whitespace ~ ("set" | "running" | "active"))?)?) |
+    ("how" ~ whitespace ~ "much" ~ whitespace ~ "time" ~ whitespace ~ "is" ~ whitespace ~ "left") |
+    (("list" | "check") ~ whitespace ~ ("my" ~ whitespace)? ~ "timers")
+}
+
+// "cancel all timers", "stop all timers"
+cancel_all_timers_command = {
+    ("cancel" | "stop" | "remove" | "delete" | "clear") ~ whitespace ~ "all" ~ whitespace ~ "timers"
+}
+
+// "cancel timer pizza"
+// "cancel the five minute timer"
+// "cancel the pizza timer"
+// "stop timer"
+cancel_timer_command = {
+    ("cancel" | "stop" | "remove" | "delete") ~ whitespace ~
+    ("the" ~ whitespace)? ~
+    (
+        (timer_duration ~ whitespace ~ "timer") |
+        ("timer" ~ (whitespace ~ timer_name)?) |
+        (timer_name ~ whitespace ~ "timer")
+    )
 }

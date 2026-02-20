@@ -143,6 +143,22 @@ impl TtsClient {
         }
     }
 
+    /// Set the volume for audio playback (0.0 to 1.0)
+    pub fn set_volume(&mut self, volume: f32) -> Result<()> {
+        let cmd = TtsCommand::SetVolume(volume);
+        let cmd_bytes = serialize_command(&cmd)?;
+        self.write_length_prefixed_message(&cmd_bytes)?;
+
+        let resp_bytes = self.read_length_prefixed_message()?;
+        let resp = deserialize_response(&resp_bytes)?;
+
+        match resp {
+            TtsResponse::VolumeSet => Ok(()),
+            TtsResponse::Error(e) => Err(color_eyre::eyre::eyre!("TTS error: {}", e)),
+            _ => Err(color_eyre::eyre::eyre!("Unexpected response: {:?}", resp)),
+        }
+    }
+
     /// Stop current playback
     #[allow(dead_code)]
     pub fn stop(&mut self) -> Result<()> {

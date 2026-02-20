@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 
+use crate::command_executor::{TimerEvent, TimerManager};
 use crate::speech::{SpeechSegment, SpeechToTextClient};
 use crate::speech_listener::SpeechEvent;
 use crate::{speech_listener::create_stream, tts_client::TtsClient};
@@ -17,7 +18,7 @@ use whisper_rs::{SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 mod audio_resampler;
 mod command_executor;
-mod human_format;
+pub(crate) mod human_format;
 mod speech;
 mod speech_listener;
 mod tts_client;
@@ -62,6 +63,9 @@ enum Commands {
 
         #[arg(short, long, env = "WEATHER_LONGITUDE")]
         weather_longitude: Option<f64>,
+
+        #[arg(long, env = "ALARM_VOLUME", default_value = "0.5")]
+        alarm_volume: f32,
     },
     GetInputDevices,
 }
@@ -352,6 +356,11 @@ fn clean_text_segments(segments: Vec<SpeechSegment>, voice_activation_text: &str
     }
 }
 
+enum AppEvent {
+    Speech(SpeechEvent),
+    TimerFired(TimerEvent),
+}
+
 struct VoiceAssistantConfig {
     pub home_assistant_base_url: Url,
     pub home_assistant_token: String,
@@ -361,6 +370,7 @@ struct VoiceAssistantConfig {
     pub wake_word_threshold: f32,
     pub weather_latitude: Option<f64>,
     pub weather_longitude: Option<f64>,
+    pub alarm_volume: f32,
 }
 
 fn run_voice_assistant(voice_assistant_config: VoiceAssistantConfig) -> Result<()> {
@@ -422,15 +432,48 @@ fn run_voice_assistant(voice_assistant_config: VoiceAssistantConfig) -> Result<(
         voice_assistant_config.weather_longitude,
     );
 
+    // Create unified event channel
+    let (app_tx, app_rx) = mpsc::channel::<AppEvent>();
+
+    // Forward speech events to unified channel
+    let speech_tx = app_tx.clone();
+    thread::spawn(move || {
+        for event in channel_rx {
+            if speech_tx.send(AppEvent::Speech(event)).is_err() {
+                break;
+            }
+        }
+    });
+
+    // Create timer manager with sender for timer events
+    let (timer_tx, timer_rx) = mpsc::channel::<TimerEvent>();
+    let timer_manager = TimerManager::new(timer_tx);
+
+    // Forward timer events to unified channel
+    let timer_app_tx = app_tx.clone();
+    thread::spawn(move || {
+        for event in timer_rx {
+            if timer_app_tx.send(AppEvent::TimerFired(event)).is_err() {
+                break;
+            }
+        }
+    });
+
+    let alarm_volume = voice_assistant_config.alarm_volume;
+
     println!("Listening for speech... say alexa to start");
     tts_client.generate_audio("Listening for speech...".to_string())?;
     let voice_activation_text = "alexa";
-    for event in channel_rx {
+    for event in app_rx {
         match event {
-            SpeechEvent::SpeechDetected(audio) => {
+            AppEvent::Speech(SpeechEvent::SpeechDetected(audio)) => {
                 let segments = speech_to_text_client.process(audio)?;
                 let cleaned_text = clean_text_segments(segments, voice_activation_text);
-                match command_executor::execute_command(&command_executor_config, &cleaned_text) {
+                match command_executor::execute_command(
+                    &command_executor_config,
+                    &timer_manager,
+                    &cleaned_text,
+                ) {
                     Ok(response_text) => {
                         tts_client.generate_audio(response_text)?;
                     }
@@ -441,6 +484,16 @@ fn run_voice_assistant(voice_assistant_config: VoiceAssistantConfig) -> Result<(
                         )?;
                     }
                 }
+            }
+            AppEvent::TimerFired(timer_event) => {
+                let message = match timer_event.name {
+                    Some(name) => format!("Timer {} is done.", name),
+                    None => "Your timer is done.".to_string(),
+                };
+                println!("Timer fired: {}", message);
+                tts_client.set_volume(alarm_volume)?;
+                tts_client.generate_audio(message)?;
+                tts_client.set_volume(1.0)?;
             }
         }
     }
@@ -472,6 +525,7 @@ fn main() -> Result<()> {
             wake_word_threshold,
             weather_latitude,
             weather_longitude,
+            alarm_volume,
         } => run_voice_assistant(VoiceAssistantConfig {
             home_assistant_base_url,
             home_assistant_token,
@@ -481,6 +535,7 @@ fn main() -> Result<()> {
             wake_word_threshold,
             weather_latitude,
             weather_longitude,
+            alarm_volume,
         }),
         Commands::GetInputDevices => get_input_devices(),
     }
